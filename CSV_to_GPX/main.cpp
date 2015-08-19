@@ -233,52 +233,42 @@ int main(int argc, const char * argv[]) {
     
     gpxFile.setf(ios::fixed);
     gpxFile.precision(14);
-    
-    int i = 0;
-    while (true) {
-        double avgTemp = 0,
-               maxTemp = numeric_limits<double>::min(),
-               minTemp = numeric_limits<double>::max();
-        size_t points = 0;
-        bool firstIteration = true;
-        size_t locOf00 = fileLoc.find("LOG");
-        fileLoc[locOf00+3] = '0' + (i / 1000) % 10;
-        fileLoc[locOf00+4] = '0' + (i / 100) % 10;
-        fileLoc[locOf00+5] = '0' + (i / 10) % 10;
-        fileLoc[locOf00+6] = '0' + (i % 10);
-        if (!exists(fileLoc)) {
-            break;
+
+	double avgTemp = 0,
+	       maxTemp = numeric_limits<double>::min(),
+	       minTemp = numeric_limits<double>::max();
+	size_t points = 0;
+    bool firstIteration = true;
+	
+	csvFile.open(argv[1]);
+	
+	while (csvFile.good()) {
+        getline(csvFile, line);
+        // If line is not an empty line.
+        if (line != "") now = parseLine(line); else {csvFile.close(); break;}
+	
+        if (firstIteration) {
+           firstIteration = false;
+            gpxFile.open(argv[2] + now.time->toFileString() + ".gpx");
+            logHeader(gpxFile);
         }
-        csvFile.open(fileLoc);
-        while (csvFile.good()) {
-            getline(csvFile, line);
-            // If line is empty line.
-            if (line != "") now = parseLine(line); else {csvFile.close(); break;}
             
-            if (firstIteration) {
-                firstIteration = false;
-                gpxFile.open("/Users/Bergthor/Dropbox/Apps/WahooFitness/NJ578/" + now.time->toFileString() + ".gpx");
-                logHeader(gpxFile);
-            }
-            
-            if ((!now.equals(old) && line != "") && (!now.time->equals(*old.time))) {
-                avgTemp+= now.temperature;
-                logToFile(now, gpxFile);
-            }
-            old = now;
-            points++;
+        if ((!now.equals(old) && line != "") && (!now.time->equals(*old.time))) {
+            avgTemp+= now.temperature;
+            logToFile(now, gpxFile);
         }
-        
-        logFooter(gpxFile);
-        cout.setf(ios::fixed);
-        cout.precision(2);
-        if (points > 0)
-            cout << setw(4) << points << setw(10) << avgTemp / points << endl;
-        firstIteration = true;
-        gpxFile.close();
-        csvFile.close();
-        i++;
+        old = now;
+        points++;
     }
+        
+    logFooter(gpxFile);
+    cout.setf(ios::fixed);
+    cout.precision(2);
+    if (points > 0)
+        cout << setw(4) << points << setw(10) << avgTemp / points << " " << maxTemp << " " << minTemp << endl;
+    firstIteration = true;
+    gpxFile.close();
+    csvFile.close();
     
     return 0;
 }
