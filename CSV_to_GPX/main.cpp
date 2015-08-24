@@ -180,7 +180,7 @@ GPSPoint parseLine(string line) {
     return p;
 }
 
-void logHeader(ofstream &f) {
+void logHeader(ofstream &f, string date) {
     f << "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" << endl;
     f << "<gpx version=\"1.1\" " << endl;
     f << "     creator=\"Garmin Connect\"" << endl;
@@ -195,7 +195,7 @@ void logHeader(ofstream &f) {
     f << "     xmlns:gpxx=   \"http://www.garmin.com/xmlschemas/GpxExtensions/v3\"" << endl;
     f << "     xmlns:xsi=    \"http://www.w3.org/2001/XMLSchema-instance\">" << endl;
     f << "    <trk>" << endl;
-    f << "        <name>RH508</name>" << endl;
+    f << "        <name>" << date << "</name>" << endl;
     f << "        <trkseg>" << endl;
 }
 
@@ -225,49 +225,60 @@ void logFooter(ofstream &f) {
 
 
 int main(int argc, const char * argv[]) {
-    string line, fileLoc = "/Volumes/UNTITLED/LOG0000.CSV";
-    GPSPoint now(""), old("");
+	GPSPoint now(""), old("");
+	string line;
     ifstream csvFile;
     ofstream gpxFile;
-    
-    
+
     gpxFile.setf(ios::fixed);
     gpxFile.precision(14);
 
 	double avgTemp = 0,
 	       maxTemp = numeric_limits<double>::min(),
 	       minTemp = numeric_limits<double>::max();
-	size_t points = 0;
+	
+	size_t points = 0, loggedPoints = 0;
     bool firstIteration = true;
 	
 	csvFile.open(argv[1]);
 	
 	while (csvFile.good()) {
         getline(csvFile, line);
-        // If line is not an empty line.
-        if (line != "") now = parseLine(line); else {csvFile.close(); break;}
+		
+        if (line != "") now = parseLine(line);
+		// We are done or the file was empty.
+		else {csvFile.close(); break;}
 	
         if (firstIteration) {
            firstIteration = false;
-            gpxFile.open(argv[2] + now.time->toFileString() + ".gpx");
-            logHeader(gpxFile);
+			if (strncmp(argv[2], ".", strlen(argv[2])) == 0) {
+				gpxFile.open(now.time->toFileString() + ".gpx");
+			} else {
+				gpxFile.open(argv[2] + now.time->toFileString() + ".gpx");
+			}
+				logHeader(gpxFile, now.time->toFileString());
         }
-            
+		
+		
         if ((!now.equals(old) && line != "") && (!now.time->equals(*old.time))) {
             avgTemp+= now.temperature;
             logToFile(now, gpxFile);
+			loggedPoints++;
         }
         old = now;
         points++;
     }
         
     logFooter(gpxFile);
+	
     cout.setf(ios::fixed);
     cout.precision(2);
-    if (points > 0)
-        cout << setw(4) << points << setw(10) << avgTemp / points << " " << maxTemp << " " << minTemp << endl;
-    firstIteration = true;
-    gpxFile.close();
+	
+	// Print to screen
+	if (points > 0)
+        cout << setw(5) << points << " (" << loggedPoints << ") " << setw(7) << avgTemp / points << endl;
+	
+	gpxFile.close();
     csvFile.close();
     
     return 0;
