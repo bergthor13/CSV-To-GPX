@@ -233,9 +233,9 @@ int main(int argc, const char * argv[]) {
     gpxFile.setf(ios::fixed);
     gpxFile.precision(14);
 
-	double avgTemp = 0,
-	       maxTemp = numeric_limits<double>::min(),
-	       minTemp = numeric_limits<double>::max();
+	double avgTemp = 0;
+	//double maxTemp = numeric_limits<double>::min();
+	//double minTemp = numeric_limits<double>::max();
 	
 	size_t points = 0, loggedPoints = 0;
     bool firstIteration = true;
